@@ -1,13 +1,13 @@
 pipeline {
-    agent {
-        docker { image 'php:8.2-apache' } // Menggunakan Docker image PHP dengan Apache
-    }
+    agent any // Jenkins agent (yang sudah Anda bangun dengan Docker CLI) akan menjalankan pipeline ini
+
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/Gibransyah/test.git' // Ganti dengan URL repo Anda
+                git 'https://github.com/Gibransyah/test.git' // Pastikan ini adalah URL repo Anda
             }
         }
+
         stage('Deploy Application using Docker Local Image') {
             steps {
                 script {
@@ -19,9 +19,13 @@ pipeline {
                     """
                     writeFile file: 'Dockerfile', text: dockerfileContent
 
-                    // Membangun Docker image lokal
+                    // Membangun Docker image lokal menggunakan Docker daemon dari agent Jenkins
                     sh "docker build -t php-simple-app-minimal:latest ."
                     
+                    // Menghentikan dan menghapus container sebelumnya jika ada
+                    sh "docker stop my-minimal-php-app || true"
+                    sh "docker rm my-minimal-php-app || true"
+
                     // Menjalankan Docker container dari image yang baru dibuat
                     sh "docker run -d -p 8082:80 --name my-minimal-php-app php-simple-app-minimal:latest"
                     echo "Aplikasi PHP minimal telah di-deploy di http://localhost:8082"
@@ -31,10 +35,14 @@ pipeline {
     }
     post {
         always {
-            // Membersihkan Docker container setelah pipeline selesai (opsional)
-            sh 'docker stop my-minimal-php-app || true'
-            sh 'docker rm my-minimal-php-app || true'
-            sh 'docker rmi php-simple-app-minimal:latest || true'
+            script { // Pastikan 'sh' command di dalam 'script' block
+                // Membersihkan Docker container setelah pipeline selesai (opsional tapi direkomendasikan)
+                sh 'docker stop my-minimal-php-app || true'
+                sh 'docker rm my-minimal-php-app || true'
+                sh 'docker rmi php-simple-app-minimal:latest || true' // Menghapus image yang dibangun
+                echo 'Pembersihan resource Docker selesai.'
+                echo 'Pipeline selesai.'
+            }
         }
     }
 }
