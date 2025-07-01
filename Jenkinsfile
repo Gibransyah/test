@@ -3,10 +3,10 @@ pipeline {
 
     stages {
         stage('Clone Repository') {
-            steps {
-                git 'https://github.com/Gibransyah/test.git' // Pastikan ini adalah URL repo Anda
-            }
-        }
+    steps {
+        git branch: 'main', url: 'https://github.com/Gibransyah/test.git' // Spesifikasikan branch 'main'
+    }
+}
 
         stage('Deploy Application using Docker Local Image') {
             steps {
